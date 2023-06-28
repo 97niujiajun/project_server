@@ -2,9 +2,14 @@
 #include <sys/sem.h>
 
 
-#define SEM_PATHNAME "."
+#define SEM_PATHNAME "/home"
 #define SEM_PRO_ID 99
 
+/*
+ *  在不同操作中传参给'semctl'
+ 	@param val : 设置单个信号量的值时使用，对应的操作类型是SETVAL
+	@param *array : 获取或设置多个信号量的值时使用，对应的操作类型是GETALL 和 SETALL
+ */
 union semun{
 	int val; // SETVAL
 	unsigned short *array;// Array for GETALL/SETALL
@@ -14,7 +19,6 @@ union semun{
 	创建信号量集合
 	@param nsems : 信号量的数量
 	@param values : 信号量的值
-
 	@return :
 		成功 : 0
 		失败 : -1
