@@ -7,9 +7,11 @@
 #include "sem.h"
 #include "shm.h"
 
-#define SEM_EMPTY_ID 0
-#define SEM_FULL_ID 1
-#define SEM_MUTEX_ID 2
+// 这里的0，1，2是values[]中的下标
+// unsigned short values[] = {0,blocks,1};//对3个信号量进行初始化
+#define SEM_EMPTY_ID 0 // 判空
+#define SEM_FULL_ID 1  // 判满
+#define SEM_MUTEX_ID 2 // 互斥
 
 
 // 头节点
@@ -32,5 +34,10 @@ extern shm_fifo_t *shmfifo_init(int blocks, int blksz);
 // 销毁环形队列
 extern void shmfifo_destroy(shm_fifo_t *fifo);
 
+// 环形队列写数据,*fifo指向结构体变量的指针，const buffer地址。
+extern void shmfifo_put(shm_fifo_t *fifo,const void *buf);
+
+// 环形队列读数据
+extern void shmfifo_get(shm_fifo_t *fifo, void *buf);
 
 #endif //PROJECT_SERVER__SHMFIFO_H_

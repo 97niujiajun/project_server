@@ -1,3 +1,4 @@
+/* 一，测试共享内存是否成功
 #include <stdio.h>
 #include <string.h>
 
@@ -39,3 +40,40 @@ int main()
 
   return 0;
 }
+*/
+
+
+#include <stdio.h>
+#include <string.h>
+
+#include "shmfifo.h"
+
+typedef struct person{
+  int age;
+  char name[32];
+}person_t;
+
+// 服务器负责从环形队列中读取数据
+int main(void)
+{
+  person_t person;
+  shm_fifo_t *fifo = shmfifo_init(3, sizeof(person_t)); // 初始化环形队列，三个数据
+
+  for (;;) {
+    shmfifo_get(fifo, &person);
+    printf("name = %s, age = %d\n", person.name,person.age);
+  }
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+

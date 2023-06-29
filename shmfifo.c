@@ -1,7 +1,7 @@
 //
 // Created by 62359 on 2023/6/27.
 //
-
+#include <string.h>
 #include "shmfifo.h"
 
 static int g_shmid; // 共享内存id
@@ -44,8 +44,48 @@ shm_fifo_t *shmfifo_init(int blocks, int blksz)
 
 void shmfifo_destroy(shm_fifo_t *fifo)
 {
-  sem_del(fifo->p_head->semid);//删除信号量集合
-  shm_dt(fifo->p_head);//解除共享内存映射
-  shm_del(g_shmid);// 删除共享内存
-  free(fifo);// 释放环形队列结构体对象
+  sem_del(fifo->p_head->semid); // 删除信号量集合
+  shm_dt(fifo->p_head); // 解除共享内存映射
+  shm_del(g_shmid); // 删除共享内存
+  free(fifo); // 释放环形队列结构体对象
+}
+
+void shmfifo_put(shm_fifo_t *fifo,const void *buf)
+{
+  int pos = 0;
+
+  sem_p(fifo->p_head->semid,SEM_FULL_ID);// 占用 判满 信号量
+  sem_p(fifo->p_head->semid,SEM_MUTEX_ID); // 占用 互斥 信号量
+
+  /*
+      int rpos; // 出队列的位置
+      int wpos; // 入队列的位置
+      int blocks; // 数据块个数
+      int blksz; // 数据块大小
+      int semid; // 信号量集合ID
+   */
+  // 以下的代码，入队wpos仅做了一次变化，就是数据进入到环形队列后，就向后移动一位。 注意 pos 和 wpos的区别。
+  pos = fifo->p_head->wpos * fifo->p_head->blksz;// 计算偏移量 = wpos * blksz
+
+  memcpy(fifo->p_payload + pos,buf,fifo->p_head->blksz);// 拷贝数据到环形队列中
+
+  fifo->p_head->wpos = (fifo->p_head->wpos + 1) % (fifo->p_head->blocks);// 更新偏移
+
+  sem_v(fifo->p_head->semid,SEM_MUTEX_ID); // 注意先释放互斥的信号量
+  sem_v(fifo->p_head->semid,SEM_EMPTY_ID);
+}
+
+void shmfifo_get(shm_fifo_t *fifo, void *buf)
+{
+  int pos = 0;
+
+  sem_p(fifo->p_head->semid,SEM_EMPTY_ID);// 占用 判空 的信号量
+  sem_p(fifo->p_head->semid,SEM_MUTEX_ID);
+
+  pos = fifo->p_head->rpos * fifo->p_head->blksz;// 计算偏移量
+
+  memcpy(buf,fifo->p_payload + pos,fifo->p_head->blksz);//从环形队列中拷贝数据
+  fifo->p_head->rpos = (fifo->p_head->rpos + 1) % (fifo->p_head->blocks);// 更新偏移
+  sem_v(fifo->p_head->semid,SEM_MUTEX_ID);
+  sem_v(fifo->p_head->semid,SEM_FULL_ID);
 }
